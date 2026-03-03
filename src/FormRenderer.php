@@ -53,8 +53,16 @@ class FormRenderer
 
         $wrapperClass = apply_filters('oriel_form_wrapper_class', $wrapperClass, $formId, $this->config);
 
+        $wrapperId = apply_filters('oriel_form_wrapper_id', 'oriel-' . esc_attr($formId), $formId, $this->config);
+
         // Start building HTML.
-        $html = '<div class="' . $wrapperClass . '">';
+        $html = '<div';
+
+        if ($wrapperId) {
+            $html .= ' id="' . esc_attr($wrapperId) . '"';
+        }
+
+        $html .= ' class="' . $wrapperClass . '">';
 
         // Optional title from args.
         if (!empty($this->args['title'])) {
@@ -83,7 +91,22 @@ class FormRenderer
 
         // Opening form.
         $formElementClass = apply_filters('oriel_form_element_class', 'oriel-form__form', $formId, $this->config);
-        $html .= '<form method="post" class="' . $formElementClass . '" enctype="multipart/form-data">';
+        $formElementId = apply_filters('oriel_form_element_id', 'oriel-form-' . esc_attr($formId), $formId, $this->config);
+
+        $formElementAttrs = apply_filters('oriel_form_element_attrs', [
+            'novalidate'   => 'novalidate',
+            'autocomplete' => 'off',
+        ], $formId, $this->config);
+
+        $html .= '<form method="post"';
+
+        if ($formElementId) {
+            $html .= ' id="' . esc_attr($formElementId) . '"';
+        }
+
+        $html .= ' class="' . $formElementClass . '" enctype="multipart/form-data"';
+        $html .= $this->renderAttributes($formElementAttrs);
+        $html .= '>';
         $html .= '<input type="hidden" name="oriel_form_id" value="' . esc_attr($formId) . '">';
         $html .= $this->renderSecurityFields($formId);
 
@@ -219,6 +242,28 @@ class FormRenderer
         $html .= ' />';
 
         return $html;
+    }
+
+    /**
+     * Render an associative array as HTML attributes string.
+     */
+    private function renderAttributes(array $attrs): string
+    {
+        $parts = [];
+
+        foreach ($attrs as $key => $value) {
+            if ($value === true) {
+                $parts[] = esc_attr($key);
+            } elseif ($value !== false && $value !== null) {
+                $parts[] = esc_attr($key) . '="' . esc_attr($value) . '"';
+            }
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        return ' ' . implode(' ', $parts);
     }
 
     /**
