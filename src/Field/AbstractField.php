@@ -38,9 +38,13 @@ abstract class AbstractField implements FieldInterface
 
         $classes = apply_filters('oriel_field_wrapper_class', $classes, $field, $formId);
 
+        $inputWrapperClass = apply_filters('oriel_field_input_wrapper_class', 'oriel-field__input', $field, $formId);
+
         $html = '<div class="' . $classes . '">';
         $html .= $this->renderLabel($field, $formId);
+        $html .= '<div class="' . $inputWrapperClass . '">';
         $html .= $this->renderInput($field, $value, $formId);
+        $html .= '</div>';
         $html .= $this->renderDescription($field, $formId);
         $html .= $this->renderError($field, $formId);
         $html .= '</div>';
