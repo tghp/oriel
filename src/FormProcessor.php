@@ -10,6 +10,7 @@ use Oriel\Processing\HooksStep;
 use Oriel\Processing\EmailStep;
 use Oriel\Processing\CleanupStep;
 use Oriel\Processing\RedirectStep;
+use Oriel\Processing\RestResponseStep;
 
 class FormProcessor
 {
@@ -62,6 +63,7 @@ class FormProcessor
             new EmailStep(),
             new CleanupStep(),
             new RedirectStep(),
+            new RestResponseStep(),
         ];
 
         foreach ($steps as $step) {
