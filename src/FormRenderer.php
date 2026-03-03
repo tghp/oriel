@@ -115,7 +115,10 @@ class FormRenderer
         if ($useFormFieldsWrapper) {
             // Opening wrapper for form fields.
             $formFieldsWrapperClass = apply_filters('oriel_form_fields_wrapper_class', 'oriel-form__fields', $formId, $this->config);
-            $html .= '<div class="' . $formFieldsWrapperClass . '">';
+            $formFieldsWrapperAttrs = apply_filters('oriel_form_fields_wrapper_attrs', [], $formId, $this->config);
+            $html .= '<div class="' . $formFieldsWrapperClass . '"';
+            $html .= $this->renderAttributes($formFieldsWrapperAttrs);
+            $html .= '>';
         }
 
         $html .= apply_filters('oriel_form_fields_before', '', $formId, $this->config);
