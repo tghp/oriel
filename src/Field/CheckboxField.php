@@ -25,9 +25,11 @@ class CheckboxField extends AbstractField
             $classes .= ' ' . esc_attr($extraClass);
         }
 
+        $classes = apply_filters('oriel_field_wrapper_class', $classes, $field, $formId);
+
         $html = '<div class="' . $classes . '">';
         $html .= $this->renderInput($field, $value, $formId);
-        $html .= $this->renderError($field);
+        $html .= $this->renderError($field, $formId);
         $html .= '</div>';
 
         return $html;

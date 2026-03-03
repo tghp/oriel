@@ -15,7 +15,8 @@ class RadioField extends AbstractField
         $inputName = $this->getInputName($field);
         $inputIdBase = $this->getInputId($field, $formId);
 
-        $html = '<div class="oriel-field__radios">';
+        $radiosClass = apply_filters('oriel_field_radios_class', 'oriel-field__radios', $field, $formId);
+        $html = '<div class="' . $radiosClass . '">';
 
         foreach ($options as $optionValue => $optionLabel) {
             $optionId = $inputIdBase . '_' . $optionValue;

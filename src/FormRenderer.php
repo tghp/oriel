@@ -51,34 +51,51 @@ class FormRenderer
             $wrapperClass .= ' ' . esc_attr($options['class']);
         }
 
+        $wrapperClass = apply_filters('oriel_form_wrapper_class', $wrapperClass, $formId, $this->config);
+
         // Start building HTML.
         $html = '<div class="' . $wrapperClass . '">';
 
         // Optional title from args.
         if (!empty($this->args['title'])) {
-            $html .= '<h3 class="oriel-form__title">' . esc_html($this->args['title']) . '</h3>';
+            $titleClass = apply_filters('oriel_form_title_class', 'oriel-form__title', $formId, $this->config);
+            $html .= '<h3 class="' . $titleClass . '">' . esc_html($this->args['title']) . '</h3>';
         }
 
         // Success message when ?oriel-submitted={formId} is present.
         if ($this->isSubmitted()) {
             $confirmation = $options['confirmation'] ?? 'Your submission has been received.';
-            $html .= '<div class="oriel-form__message oriel-form__message--success">';
+            $successClass = apply_filters('oriel_form_message_class', 'oriel-form__message oriel-form__message--success', $formId, 'success');
+            $html .= '<div class="' . $successClass . '">';
             $html .= esc_html($confirmation);
             $html .= '</div>';
         }
 
         // Error message when ?oriel-errors={formId} is present.
         if ($this->hasErrors()) {
-            $html .= '<div class="oriel-form__message oriel-form__message--error">';
+            $errorClass = apply_filters('oriel_form_message_class', 'oriel-form__message oriel-form__message--error', $formId, 'error');
+            $html .= '<div class="' . $errorClass . '">';
             $html .= 'There were errors with your submission. Please correct them and try again.';
             $html .= '</div>';
         }
 
         do_action('oriel_form_before', $formId, $this->config);
 
-        $html .= '<form method="post" class="oriel-form__form" enctype="multipart/form-data">';
+        // Opening form.
+        $formElementClass = apply_filters('oriel_form_element_class', 'oriel-form__form', $formId, $this->config);
+        $html .= '<form method="post" class="' . $formElementClass . '" enctype="multipart/form-data">';
         $html .= '<input type="hidden" name="oriel_form_id" value="' . esc_attr($formId) . '">';
         $html .= wp_nonce_field('oriel_submit_' . $formId, '_oriel_nonce', true, false);
+
+        $useFormFieldsWrapper = apply_filters('oriel_form_use_fields_wrapper', true, $formId, $this->config);
+
+        if ($useFormFieldsWrapper) {
+            // Opening wrapper for form fields.
+            $formFieldsWrapperClass = apply_filters('oriel_form_fields_wrapper_class', 'oriel-form__fields', $formId, $this->config);
+            $html .= '<div class="' . $formFieldsWrapperClass . '">';
+        }
+
+        $html .= apply_filters('oriel_form_fields_before', '', $formId, $this->config);
 
         // Render each field.
         foreach ($fields as $field) {
@@ -109,10 +126,9 @@ class FormRenderer
 
             // If there's an error, inject it into the error placeholder div.
             if (!empty($field['error'])) {
-                $errorFor = 'data-error-for="' . esc_attr($fieldId) . '"';
-                $fieldHtml = str_replace(
-                    '<div class="oriel-field__error" ' . $errorFor . '></div>',
-                    '<div class="oriel-field__error" ' . $errorFor . '>' . esc_html($field['error']) . '</div>',
+                $fieldHtml = preg_replace(
+                    '/(<div[^>]*data-error-for="' . preg_quote(esc_attr($fieldId), '/') . '"[^>]*>)<\/div>/',
+                    '$1' . esc_html($field['error']) . '</div>',
                     $fieldHtml
                 );
             }
@@ -122,11 +138,14 @@ class FormRenderer
             $html .= $fieldHtml;
         }
 
+        $html .= apply_filters('oriel_form_fields_after', '', $formId, $this->config);
+
         // Submit button.
         $submitText = $options['submit_text'] ?? 'Submit';
         $submitClass = $options['submit_class'] ?? '';
 
-        $submitHtml = '<div class="oriel-form__submit">';
+        $submitWrapperClass = apply_filters('oriel_form_submit_class', 'oriel-form__submit', $formId, $this->config);
+        $submitHtml = '<div class="' . $submitWrapperClass . '">';
         $submitHtml .= '<button type="submit"';
 
         if ($submitClass) {
@@ -138,7 +157,16 @@ class FormRenderer
 
         $submitHtml = apply_filters('oriel_submit_button', $submitHtml, $formId, $this->config);
 
+        $html .= apply_filters('oriel_form_submit_before', '', $formId, $this->config);
         $html .= $submitHtml;
+        $html .= apply_filters('oriel_form_submit_after', '', $formId, $this->config);
+
+        if ($useFormFieldsWrapper) {
+            // Closing wrapper for form fields.
+            $html .= '</div>';
+        }
+
+        // Closing form.
         $html .= '</form>';
 
         do_action('oriel_form_after', $formId, $this->config);
@@ -231,13 +259,17 @@ class FormRenderer
 
         $id = 'oriel-toggle-' . esc_attr($this->formId);
 
+        $toggleClass = 'oriel-form__toggle' . ($buttonClass ? ' ' . esc_attr($buttonClass) : '');
+        $toggleClass = apply_filters('oriel_form_toggle_class', $toggleClass, $this->formId);
+
         $html = '<button type="button"';
-        $html .= ' class="oriel-form__toggle' . ($buttonClass ? ' ' . esc_attr($buttonClass) : '') . '"';
+        $html .= ' class="' . $toggleClass . '"';
         $html .= ' aria-expanded="false"';
         $html .= ' aria-controls="' . $id . '"';
         $html .= '>' . esc_html($buttonLabel) . '</button>';
 
-        $html .= '<div id="' . $id . '" class="oriel-form__hidden" hidden>';
+        $hiddenClass = apply_filters('oriel_form_hidden_class', 'oriel-form__hidden', $this->formId);
+        $html .= '<div id="' . $id . '" class="' . $hiddenClass . '" hidden>';
         $html .= $formHtml;
         $html .= '</div>';
 

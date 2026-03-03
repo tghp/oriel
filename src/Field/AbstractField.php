@@ -2,6 +2,8 @@
 
 namespace Oriel\Field;
 
+use Oriel\Util;
+
 abstract class AbstractField implements FieldInterface
 {
     /**
@@ -25,7 +27,7 @@ abstract class AbstractField implements FieldInterface
     public function render(array $field, $value, string $formId): string
     {
         $type = $this->getType();
-        $id = $field['id'] ?? '';
+        $id = $this->getInputId($field, $formId);
         $extraClass = $field['class'] ?? '';
 
         $classes = 'oriel-field oriel-field--' . esc_attr($type) . ' oriel-field--' . esc_attr($id);
@@ -34,11 +36,13 @@ abstract class AbstractField implements FieldInterface
             $classes .= ' ' . esc_attr($extraClass);
         }
 
+        $classes = apply_filters('oriel_field_wrapper_class', $classes, $field, $formId);
+
         $html = '<div class="' . $classes . '">';
         $html .= $this->renderLabel($field, $formId);
         $html .= $this->renderInput($field, $value, $formId);
-        $html .= $this->renderDescription($field);
-        $html .= $this->renderError($field);
+        $html .= $this->renderDescription($field, $formId);
+        $html .= $this->renderError($field, $formId);
         $html .= '</div>';
 
         return $html;
@@ -52,7 +56,7 @@ abstract class AbstractField implements FieldInterface
         $required = !empty($field['required']);
 
         if ($required && $this->isEmpty($value)) {
-            $name = $field['name'] ?? $field['id'] ?? 'This field';
+            $name = $field['name'] ?? 'This field';
 
             return $name . ' is required.';
         }
@@ -77,17 +81,36 @@ abstract class AbstractField implements FieldInterface
             return '';
         }
 
+        $html = '';
+
         $inputId = $this->getInputId($field, $formId);
         $required = !empty($field['required']);
 
-        $html = '<label for="' . esc_attr($inputId) . '">';
+        $useLabelWrapper = apply_filters('oriel_field_use_label_wrapper', true, $field, $formId);
+        
+        if ($useLabelWrapper) {
+            $wrapperClasses = apply_filters('oriel_field_label_wrapper_class', 'oriel-field__label-wrapper', $field, $formId);
+            $html .= '<div class="' . $wrapperClasses . '">';
+        }
+
+        $labelClasses = apply_filters('oriel_field_label_class', 'oriel-field__label', $field, $formId);
+
+        $labelId = $inputId . '-label';
+
+        $html .= '<label for="' . esc_attr($inputId) . '" id="' . $labelId . '" class="' . $labelClasses . '">';
         $html .= esc_html($field['name']);
 
         if ($required) {
-            $html .= ' <span class="oriel-field__required">*</span>';
+            $requiredSymbol = apply_filters('oriel_field_required_symbol', '*', $field, $formId);
+            $requiredClass = apply_filters('oriel_field_required_class', 'oriel-field__required', $field, $formId);
+            $html .= ' <span class="' . $requiredClass . '">' . $requiredSymbol . '</span>';
         }
 
         $html .= '</label>';
+
+        if ($useLabelWrapper) {
+            $html .= '</div>';
+        }
 
         return $html;
     }
@@ -95,23 +118,25 @@ abstract class AbstractField implements FieldInterface
     /**
      * Render the description text below the input.
      */
-    protected function renderDescription(array $field): string
+    protected function renderDescription(array $field, string $formId): string
     {
         if (empty($field['desc'])) {
             return '';
         }
 
-        return '<p class="oriel-field__desc">' . esc_html($field['desc']) . '</p>';
+        $descClass = apply_filters('oriel_field_description_class', 'oriel-field__desc', $field, $formId);
+        return '<p class="' . $descClass . '">' . esc_html($field['desc']) . '</p>';
     }
 
     /**
      * Render the error placeholder.
      */
-    protected function renderError(array $field): string
+    protected function renderError(array $field, string $formId): string
     {
-        $id = $field['id'] ?? '';
+        $id = $this->getInputId($field, $formId);
+        $errorClass = apply_filters('oriel_field_error_class', 'oriel-field__error', $field, $formId);
 
-        return '<div class="oriel-field__error" data-error-for="' . esc_attr($id) . '"></div>';
+        return '<div class="' . $errorClass . '" data-error-for="' . esc_attr($id) . '"></div>';
     }
 
     /**
@@ -119,15 +144,26 @@ abstract class AbstractField implements FieldInterface
      */
     protected function getInputId(array $field, string $formId): string
     {
-        return 'oriel_' . $formId . '_' . ($field['id'] ?? '');
+        $fieldId = $field['id'];
+
+        if (!$fieldId) {
+            $fieldId = Util::slugify($field['name']);
+        }
+
+        if (!$fieldId) {
+            $randomId = wp_rand(1000, 9999);
+            $fieldId = 'oriel_' . $randomId;
+        }
+
+        return 'oriel_' . esc_attr($fieldId);
     }
 
     /**
      * Build the input element's name attribute value.
      */
-    protected function getInputName(array $field): string
+    protected function getInputName(array $field, string $formId): string
     {
-        return 'oriel[' . ($field['id'] ?? '') . ']';
+        return 'oriel[' . $this->getInputId($field, $formId) . ']';
     }
 
     /**
@@ -163,7 +199,7 @@ abstract class AbstractField implements FieldInterface
     {
         $attrs = array_merge([
             'id'   => $this->getInputId($field, $formId),
-            'name' => $this->getInputName($field),
+            'name' => $this->getInputName($field, $formId),
         ], $extra);
 
         if (!empty($field['placeholder'])) {
