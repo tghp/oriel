@@ -85,7 +85,7 @@ class FormRenderer
         $formElementClass = apply_filters('oriel_form_element_class', 'oriel-form__form', $formId, $this->config);
         $html .= '<form method="post" class="' . $formElementClass . '" enctype="multipart/form-data">';
         $html .= '<input type="hidden" name="oriel_form_id" value="' . esc_attr($formId) . '">';
-        $html .= wp_nonce_field('oriel_submit_' . $formId, '_oriel_nonce', true, false);
+        $html .= $this->renderSecurityFields($formId);
 
         $useFormFieldsWrapper = apply_filters('oriel_form_use_fields_wrapper', true, $formId, $this->config);
 
@@ -184,6 +184,41 @@ class FormRenderer
         }
 
         return apply_filters('oriel_form_html', $html, $formId, $this->config, $this->args);
+    }
+
+    /**
+     * Render hidden security fields: conditional nonce, honeypot, timing token.
+     */
+    private function renderSecurityFields(string $formId): string
+    {
+        $html = '';
+
+        // Nonce: only for logged-in users (avoids stale tokens under full-page caching).
+        if (is_user_logged_in()) {
+            $html .= wp_nonce_field('oriel_submit_' . $formId, '_oriel_nonce', true, false);
+        }
+
+        // Honeypot: hidden field that bots fill but humans don't.
+        $honeypotName = \Oriel\Security\HoneypotCheck::resolveFieldName($this->config);
+
+        if ($honeypotName !== null) {
+            $html .= '<div style="position:absolute;left:-9999px;" aria-hidden="true">';
+            $html .= '<input type="text"';
+            $html .= ' name="' . esc_attr($honeypotName) . '"';
+            $html .= ' value=""';
+            $html .= ' tabindex="-1"';
+            $html .= ' autocomplete="off"';
+            $html .= ' />';
+            $html .= '</div>';
+        }
+
+        // Timing token: encoded timestamp to detect instant submissions.
+        $html .= '<input type="hidden"';
+        $html .= ' name="' . esc_attr(\Oriel\Security\TimingCheck::FIELD_NAME) . '"';
+        $html .= ' value="' . esc_attr(base64_encode((string) time())) . '"';
+        $html .= ' />';
+
+        return $html;
     }
 
     /**
