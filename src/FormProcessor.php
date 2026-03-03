@@ -3,6 +3,7 @@
 namespace Oriel;
 
 use Oriel\Processing\ProcessingContext;
+use Oriel\Processing\SecurityStep;
 use Oriel\Processing\ValidateStep;
 use Oriel\Processing\CreatePostStep;
 use Oriel\Processing\HooksStep;
@@ -54,6 +55,7 @@ class FormProcessor
         );
 
         $steps = [
+            new SecurityStep(),
             new ValidateStep(),
             new CreatePostStep(),
             new HooksStep(),
