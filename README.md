@@ -2,19 +2,6 @@
 
 Developer-first WordPress form plugin. Define forms entirely in code — no admin UI. Independent of Meta Box, but mirrors its field definition format for easy migration.
 
-## Requirements
-
-- PHP 7.4+
-- WordPress 6.0+
-
-## Installation
-
-```bash
-composer dump-autoload
-```
-
-Activate the plugin in WordPress admin.
-
 ## Defining Forms
 
 Register forms via the `oriel_forms` filter:
@@ -114,7 +101,60 @@ $value = oriel_get_submission_data($postId, 'email');
 
 AJAX submissions post to: `POST /wp-json/oriel/v1/submit`
 
-Body: `{ oriel_form_id, _oriel_nonce, oriel: { field_id: value } }`
+Body: `{ oriel_form_id, oriel: { field_id: value } }`
+
+Nonce (`_oriel_nonce`) is only required for logged-in users. See [Security](#security) below.
+
+## Security
+
+Oriel uses a multi-layered security approach designed to work under full-page caching. WP nonces are only verified for logged-in users (cached pages serve stale tokens to anonymous visitors). All other checks run unconditionally.
+
+**Built-in checks (in order):**
+
+1. **Honeypot** — hidden field that bots auto-fill. Field name is dynamically chosen to avoid collisions with form field IDs.
+2. **Rate limiting** — IP-based throttle using transients. Sliding window: the counter resets after a full window of inactivity.
+3. **Timing** — rejects submissions that arrive too quickly (< 3s) or too long after render (> 24h).
+4. **Nonce** — standard WP nonce verification, logged-in users only.
+
+### Security Hooks
+
+| Filter                               | Description                                            | Default                                                    |
+| ------------------------------------ | ------------------------------------------------------ | ---------------------------------------------------------- |
+| `oriel_security_checks`              | Array of `SecurityCheckInterface` instances to run     | All 4 built-in checks                                      |
+| `oriel_security_honeypot_candidates` | Array of candidate honeypot field names                | 22 tempting names (`address_line_1`, `phone_number`, etc.) |
+| `oriel_security_rate_limit`          | Max submissions per window                             | `5`                                                        |
+| `oriel_security_rate_window`         | Rate limit window in seconds                           | `600` (10 min)                                             |
+| `oriel_security_min_time`            | Minimum seconds between render and submit              | `3`                                                        |
+| `oriel_security_max_time`            | Maximum seconds between render and submit              | `86400` (24h)                                              |
+| `oriel_security_error_message`       | Rejection message (keep generic to avoid info leakage) | `'Submission rejected.'`                                   |
+
+#### Adding a custom security check
+
+```php
+use Oriel\Security\SecurityCheckInterface;
+use Oriel\Processing\ProcessingContext;
+
+class RecaptchaCheck implements SecurityCheckInterface
+{
+    public function check(ProcessingContext $context): ?string
+    {
+        // Verify reCAPTCHA token...
+        return null; // null = pass, string = rejection message
+    }
+}
+
+add_filter('oriel_security_checks', function (array $checks): array {
+    $checks[] = new RecaptchaCheck();
+    return $checks;
+});
+```
+
+#### Adjusting rate limits
+
+```php
+add_filter('oriel_security_rate_limit', fn () => 10);     // 10 submissions
+add_filter('oriel_security_rate_window', fn () => 300);    // per 5 minutes
+```
 
 ## Hooks
 
@@ -163,6 +203,16 @@ Body: `{ oriel_form_id, _oriel_nonce, oriel: { field_id: value } }`
 - `oriel_field_description_class` (filter) — description paragraph class
 - `oriel_field_error_class` (filter) — error message div class
 - `oriel_field_radios_class` (filter) — radio button group wrapper class
+
+### Security
+
+- `oriel_security_checks` (filter) — array of `SecurityCheckInterface` instances
+- `oriel_security_honeypot_candidates` (filter) — candidate field names for honeypot
+- `oriel_security_rate_limit` (filter) — max submissions per window (default `5`)
+- `oriel_security_rate_window` (filter) — window in seconds (default `600`)
+- `oriel_security_min_time` (filter) — minimum seconds since render (default `3`)
+- `oriel_security_max_time` (filter) — maximum seconds since render (default `86400`)
+- `oriel_security_error_message` (filter) — rejection message text
 
 ### Processing
 
