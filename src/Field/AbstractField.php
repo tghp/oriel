@@ -94,7 +94,10 @@ abstract class AbstractField implements FieldInterface
         
         if ($useLabelWrapper) {
             $wrapperClasses = apply_filters('oriel_field_label_wrapper_class', 'oriel-field__label-wrapper', $field, $formId);
-            $html .= '<div class="' . $wrapperClasses . '">';
+            $wrapperAttrs = apply_filters('oriel_field_label_wrapper_attrs', [], $field, $formId);
+            $html .= '<div class="' . $wrapperClasses . '"';
+            $html .= $this->renderExtraAttributes($wrapperAttrs);
+            $html .= '>';
         }
 
         $labelClasses = apply_filters('oriel_field_label_class', 'oriel-field__label', $field, $formId);
@@ -214,9 +217,22 @@ abstract class AbstractField implements FieldInterface
             $attrs['required'] = 'required';
         }
 
+        $inputClass = apply_filters('oriel_field_input_class', '', $field, $formId);
+
+        if ($inputClass) {
+            $attrs['class'] = $inputClass;
+        }
+
         // Merge any custom attributes from the field config.
         if (!empty($field['attributes']) && is_array($field['attributes'])) {
             $attrs = array_merge($attrs, $field['attributes']);
+        }
+
+        // Merge extra attributes from filter.
+        $extraAttrs = apply_filters('oriel_field_input_attrs', [], $field, $formId);
+
+        if (!empty($extraAttrs) && is_array($extraAttrs)) {
+            $attrs = array_merge($attrs, $extraAttrs);
         }
 
         $parts = [];
@@ -230,5 +246,27 @@ abstract class AbstractField implements FieldInterface
         }
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * Render an associative array as HTML attributes string (with leading space).
+     */
+    protected function renderExtraAttributes(array $attrs): string
+    {
+        $parts = [];
+
+        foreach ($attrs as $key => $value) {
+            if ($value === true) {
+                $parts[] = esc_attr($key);
+            } elseif ($value !== false && $value !== null) {
+                $parts[] = esc_attr($key) . '="' . esc_attr($value) . '"';
+            }
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        return ' ' . implode(' ', $parts);
     }
 }
