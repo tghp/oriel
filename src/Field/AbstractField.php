@@ -104,7 +104,7 @@ abstract class AbstractField implements FieldInterface
 
         $labelId = $inputId . '-label';
 
-        $html .= '<label for="' . esc_attr($inputId) . '" id="' . $labelId . '" class="' . $labelClasses . '">';
+        $html .= '<label for="' . esc_attr($inputId) . '" id="' . esc_attr($labelId) . '" class="' . $labelClasses . '">';
         $html .= esc_html($field['name']);
 
         if ($required) {

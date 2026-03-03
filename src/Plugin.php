@@ -19,6 +19,11 @@ class Plugin
     private $registry = null;
 
     /**
+     * @var array Active compat module instances.
+     */
+    private $compat = [];
+
+    /**
      * Get the singleton instance.
      */
     public static function instance(): self
@@ -81,7 +86,7 @@ class Plugin
         }
 
         if (!empty($tghpmbForms)) {
-            new Compat\TghpmbCompat($tghpmbForms);
+            $this->compat['tghpmb'] = new Compat\TghpmbCompat($tghpmbForms);
         }
     }
 
