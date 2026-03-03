@@ -79,7 +79,7 @@ class FormRenderer
             $html .= '</div>';
         }
 
-        do_action('oriel_form_before', $formId, $this->config);
+        $html .= apply_filters('oriel_form_before', '', $formId, $this->config);
 
         // Opening form.
         $formElementClass = apply_filters('oriel_form_element_class', 'oriel-form__form', $formId, $this->config);
@@ -169,7 +169,7 @@ class FormRenderer
         // Closing form.
         $html .= '</form>';
 
-        do_action('oriel_form_after', $formId, $this->config);
+        $html .= apply_filters('oriel_form_after', '', $formId, $this->config);
 
         $html .= '</div>';
 
