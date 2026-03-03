@@ -4,7 +4,6 @@ namespace Oriel;
 
 use Oriel\PostType;
 use Oriel\FormRegistry;
-use Oriel\FormRenderer;
 use Oriel\FormProcessor;
 
 class Plugin
@@ -83,6 +82,10 @@ class Plugin
             return;
         }
 
+        if (!$this->registry->get($formId)) {
+            return;
+        }
+
         $data = isset($_POST['oriel']) && is_array($_POST['oriel'])
             ? $_POST['oriel']
             : [];
@@ -111,13 +114,32 @@ class Plugin
             return new \WP_REST_Response(['success' => false, 'message' => 'Invalid nonce.'], 403);
         }
 
+        if (!$this->registry->get($formId)) {
+            return new \WP_REST_Response(['success' => false, 'message' => 'Form not found.'], 404);
+        }
+
         $data = $request->get_param('oriel');
         $data = is_array($data) ? $data : [];
 
         $processor = new FormProcessor($this->registry, $formId, $data);
-        $result    = $processor->run();
+        $result = $processor->run();
 
-        return new \WP_REST_Response(['success' => true, 'data' => $result], 200);
+        if (!empty($result->errors)) {
+            return new \WP_REST_Response(['success' => false, 'errors' => $result->errors], 422);
+        }
+
+        $response = ['success' => true];
+        $formConfig = $this->registry->get($formId);
+
+        if (!empty($formConfig['options']['confirmation'])) {
+            $response['message'] = $formConfig['options']['confirmation'];
+        }
+
+        if (!empty($formConfig['options']['redirect'])) {
+            $response['redirect'] = $formConfig['options']['redirect'];
+        }
+
+        return new \WP_REST_Response($response, 200);
     }
 
     /**
