@@ -166,19 +166,31 @@ class FormRenderer
 
         $html .= apply_filters('oriel_form_fields_after', '', $formId, $this->config);
 
+        if ($useFormFieldsWrapper) {
+            // Closing wrapper for form fields.
+            $html .= '</div>';
+        }
+
         // Submit button.
         $submitText = $options['submit_text'] ?? 'Submit';
         $submitClass = $options['submit_class'] ?? '';
 
         $submitWrapperClass = apply_filters('oriel_form_submit_class', 'oriel-form__submit', $formId, $this->config);
+        $submitInnerClass = apply_filters('oriel_form_submit_inner_class', 'oriel-form__submit-input', $formId, $this->config);
+
+        $submitButtonAttrs = apply_filters('oriel_form_submit_button_attrs', [], $formId, $this->config);
+
         $submitHtml = '<div class="' . $submitWrapperClass . '">';
+        $submitHtml .= '<div class="' . $submitInnerClass . '">';
         $submitHtml .= '<button type="submit"';
 
         if ($submitClass) {
             $submitHtml .= ' class="' . esc_attr($submitClass) . '"';
         }
 
+        $submitHtml .= $this->renderAttributes($submitButtonAttrs);
         $submitHtml .= '>' . esc_html($submitText) . '</button>';
+        $submitHtml .= '</div>';
         $submitHtml .= '</div>';
 
         $submitHtml = apply_filters('oriel_submit_button', $submitHtml, $formId, $this->config);
@@ -186,11 +198,6 @@ class FormRenderer
         $html .= apply_filters('oriel_form_submit_before', '', $formId, $this->config);
         $html .= $submitHtml;
         $html .= apply_filters('oriel_form_submit_after', '', $formId, $this->config);
-
-        if ($useFormFieldsWrapper) {
-            // Closing wrapper for form fields.
-            $html .= '</div>';
-        }
 
         // Closing form.
         $html .= '</form>';
