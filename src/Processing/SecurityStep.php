@@ -11,12 +11,12 @@ class SecurityStep implements StepInterface
 {
     public function process(ProcessingContext $context): ProcessingContext
     {
-        $checks = [
+        $checks = apply_filters('oriel_security_checks', [
             new HoneypotCheck(),
             new RateLimitCheck(),
             new TimingCheck(),
             new NonceCheck(),
-        ];
+        ]);
 
         foreach ($checks as $check) {
             $error = $check->check($context);

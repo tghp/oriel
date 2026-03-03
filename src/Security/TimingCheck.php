@@ -31,8 +31,9 @@ class TimingCheck implements SecurityCheckInterface
         }
 
         $elapsed = time() - $renderTime;
+        $maxTime = (int) apply_filters('oriel_security_max_time', 86400);
 
-        if ($elapsed < $minTime) {
+        if ($elapsed < $minTime || $elapsed > $maxTime) {
             return 'Submission rejected.';
         }
 

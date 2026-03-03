@@ -24,6 +24,8 @@ class RateLimitCheck implements SecurityCheckInterface
             return 'Submission rejected.';
         }
 
+        // Sliding window: each submission resets the expiry. A persistent
+        // attacker must wait a full $window of inactivity before the count resets.
         set_transient($key, $count + 1, $window);
 
         return null;
