@@ -173,4 +173,40 @@ class Plugin
     {
         return $this->registry;
     }
+
+    /**
+     * Get the registered field type map, extensible via oriel_field_types filter.
+     *
+     * @return array<string, class-string<Field\FieldInterface>>
+     */
+    public function getFieldTypes(): array
+    {
+        $types = [
+            'text' => Field\TextField::class,
+            'email' => Field\EmailField::class,
+            'textarea' => Field\TextareaField::class,
+            'checkbox' => Field\CheckboxField::class,
+            'select' => Field\SelectField::class,
+            'radio' => Field\RadioField::class,
+            'hidden' => Field\HiddenField::class,
+        ];
+
+        return apply_filters('oriel_field_types', $types);
+    }
+
+    /**
+     * Get a field instance for a given type string.
+     */
+    public function getFieldInstance(string $type): ?Field\FieldInterface
+    {
+        $types = $this->getFieldTypes();
+
+        if (!isset($types[$type])) {
+            return null;
+        }
+
+        $class = $types[$type];
+
+        return new $class();
+    }
 }
