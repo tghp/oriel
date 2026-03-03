@@ -75,13 +75,6 @@ class Plugin
 
         $formId = sanitize_text_field($_POST['oriel_form_id']);
 
-        if (
-            ! isset($_POST['_oriel_nonce'])
-            || ! wp_verify_nonce($_POST['_oriel_nonce'], 'oriel_submit_' . $formId)
-        ) {
-            return;
-        }
-
         if (!$this->registry->get($formId)) {
             return;
         }
@@ -108,12 +101,6 @@ class Plugin
             return new \WP_REST_Response(['success' => false, 'message' => 'Missing form ID.'], 400);
         }
 
-        $nonce = $request->get_param('_oriel_nonce') ?? '';
-
-        if (! wp_verify_nonce($nonce, 'oriel_submit_' . $formId)) {
-            return new \WP_REST_Response(['success' => false, 'message' => 'Invalid nonce.'], 403);
-        }
-
         if (!$this->registry->get($formId)) {
             return new \WP_REST_Response(['success' => false, 'message' => 'Form not found.'], 404);
         }
@@ -125,6 +112,13 @@ class Plugin
         $result = $processor->run();
 
         if (!empty($result->errors)) {
+            if (isset($result->errors['security'])) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => $result->errors['security'],
+                ], 403);
+            }
+
             return new \WP_REST_Response(['success' => false, 'errors' => $result->errors], 422);
         }
 
