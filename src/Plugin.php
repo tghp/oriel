@@ -111,29 +111,7 @@ class Plugin
         $processor = new FormProcessor($this->registry, $formId, $data);
         $result = $processor->run();
 
-        if (!empty($result->errors)) {
-            if (isset($result->errors['security'])) {
-                return new \WP_REST_Response([
-                    'success' => false,
-                    'message' => $result->errors['security'],
-                ], 403);
-            }
-
-            return new \WP_REST_Response(['success' => false, 'errors' => $result->errors], 422);
-        }
-
-        $response = ['success' => true];
-        $formConfig = $this->registry->get($formId);
-
-        if (!empty($formConfig['options']['confirmation'])) {
-            $response['message'] = $formConfig['options']['confirmation'];
-        }
-
-        if (!empty($formConfig['options']['redirect'])) {
-            $response['redirect'] = $formConfig['options']['redirect'];
-        }
-
-        return new \WP_REST_Response($response, 200);
+        return $result->restResponse;
     }
 
     /**

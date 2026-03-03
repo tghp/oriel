@@ -6,7 +6,7 @@ class RedirectStep implements StepInterface
 {
     public function process(ProcessingContext $context): ProcessingContext
     {
-        // REST responses are handled in Plugin::handleRestSubmission().
+        // REST responses are handled by RestResponseStep.
         if ($context->isRest) {
             return $context;
         }
