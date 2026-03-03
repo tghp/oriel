@@ -11,16 +11,17 @@ class HoneypotCheck implements SecurityCheckInterface
      * The first name not colliding with an existing form field ID is used.
      */
     private const CANDIDATES = [
-        'address_line_1',
-        'address_line_2',
-        'phone_number',
-        'company_email',
-        'instagram_handle',
         'comment',
         'remark',
         'feedback',
         'notes',
         'message',
+        'website_url',
+        'company_email',
+        'phone_number',
+        'address_line_1',
+        'address_line_2',
+        'instagram_handle',
         'description',
         'additional_info',
         'extra_details',
@@ -30,7 +31,6 @@ class HoneypotCheck implements SecurityCheckInterface
         'about_me',
         'contact_info',
         'social_media_link',
-        'website_url',
         'linkedin_profile',
         'twitter_handle',
     ];
