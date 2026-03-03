@@ -47,6 +47,7 @@ class Plugin
         PostType::register();
 
         $this->registry = new FormRegistry();
+        $this->initCompat();
 
         add_shortcode('oriel_form', [$this, 'shortcode']);
         add_action('template_redirect', [$this, 'handleSubmission']);
@@ -62,6 +63,26 @@ class Plugin
             'callback'            => [$this, 'handleRestSubmission'],
             'permission_callback' => '__return_true',
         ]);
+    }
+
+    /**
+     * Scan registry for compat-enabled forms and initialize compat modules.
+     */
+    private function initCompat(): void
+    {
+        $tghpmbForms = [];
+
+        foreach ($this->registry->all() as $id => $config) {
+            $compat = $config['options']['compat'] ?? '';
+
+            if ($compat === 'tghpmb') {
+                $tghpmbForms[$id] = $config;
+            }
+        }
+
+        if (!empty($tghpmbForms)) {
+            new Compat\TghpmbCompat($tghpmbForms);
+        }
     }
 
     /**
