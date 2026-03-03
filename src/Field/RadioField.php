@@ -12,7 +12,7 @@ class RadioField extends AbstractField
     protected function renderInput(array $field, $value, string $formId): string
     {
         $options = $field['options'] ?? [];
-        $inputName = $this->getInputName($field);
+        $inputName = $this->getInputName($field, $formId);
         $inputIdBase = $this->getInputId($field, $formId);
 
         $radiosClass = apply_filters('oriel_field_radios_class', 'oriel-field__radios', $field, $formId);

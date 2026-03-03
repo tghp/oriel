@@ -38,7 +38,7 @@ class CheckboxField extends AbstractField
     protected function renderInput(array $field, $value, string $formId): string
     {
         $inputId = $this->getInputId($field, $formId);
-        $inputName = $this->getInputName($field);
+        $inputName = $this->getInputName($field, $formId);
         $checked = !empty($value) ? ' checked' : '';
         $desc = $field['desc'] ?? $field['name'] ?? '';
 

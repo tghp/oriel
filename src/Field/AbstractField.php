@@ -162,7 +162,9 @@ abstract class AbstractField implements FieldInterface
             $fieldId = 'oriel_' . $randomId;
         }
 
-        return 'oriel_' . esc_attr($fieldId);
+        $id = 'oriel_' . esc_attr($fieldId);
+
+        return apply_filters('oriel_field_input_id', $id, $field, $formId);
     }
 
     /**
@@ -170,7 +172,9 @@ abstract class AbstractField implements FieldInterface
      */
     protected function getInputName(array $field, string $formId): string
     {
-        return 'oriel[' . $this->getInputId($field, $formId) . ']';
+        $name = 'oriel[' . $this->getInputId($field, $formId) . ']';
+
+        return apply_filters('oriel_field_input_name', $name, $field, $formId);
     }
 
     /**
