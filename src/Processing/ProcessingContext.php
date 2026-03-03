@@ -25,6 +25,9 @@ class ProcessingContext
     /** @var bool */
     public $isRest = false;
 
+    /** @var \WP_REST_Response|null */
+    public $restResponse = null;
+
     public function __construct(
         string $formId,
         array $formConfig,
