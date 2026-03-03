@@ -21,6 +21,8 @@ class FormRegistry
         'class'                  => '',
         'submit_class'           => '',
         'submit_text'            => 'Submit',
+        'compat'                 => '',
+        'compat_prefix'          => '',
     ];
 
     public function __construct()
