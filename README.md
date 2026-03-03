@@ -87,6 +87,8 @@ add_filter('oriel_field_types', function (array $types): array {
 | `class`                   | Extra CSS class on form wrapper                                                           |
 | `submit_class`            | CSS class on submit button                                                                |
 | `submit_text`             | Submit button label (default: `Submit`)                                                   |
+| `compat`                  | Compat mode string. `'tghpmb'` enables Meta Box frontend submission output parity.        |
+| `compat_prefix`           | Field prefix for compat mode (e.g. `'_tghpcontact_'`). Falls back to `_tghp{formId}_`.   |
 
 ## Submission Storage
 
@@ -221,6 +223,15 @@ All hooks pass `$formId` and/or `$config` (the form configuration array) unless 
 | `oriel_form_before` | filter | `string` | `$html, $formId, $config` | HTML inserted before the form (default `''`) |
 | `oriel_form_after` | filter | `string` | `$html, $formId, $config` | HTML inserted after the form (default `''`) |
 
+#### Form IDs and Attributes
+
+| Hook | Type | Return | Args | Description |
+| ---- | ---- | ------ | ---- | ----------- |
+| `oriel_form_wrapper_id` | filter | `string` | `$id, $formId, $config` | Outer wrapper div id (default `oriel-{formId}`). Return empty to omit. |
+| `oriel_form_element_id` | filter | `string` | `$id, $formId, $config` | `<form>` element id (default `oriel-form-{formId}`). Return empty to omit. |
+| `oriel_form_element_attrs` | filter | `array` | `$attrs, $formId, $config` | Extra attributes on `<form>` (default `['novalidate' => 'novalidate', 'autocomplete' => 'off']`) |
+| `oriel_form_fields_wrapper_attrs` | filter | `array` | `$attrs, $formId, $config` | Extra attributes on fields wrapper div (default `[]`) |
+
 #### Form CSS Classes
 
 | Hook | Type | Return | Args | Description |
@@ -232,6 +243,7 @@ All hooks pass `$formId` and/or `$config` (the form configuration array) unless 
 | `oriel_form_use_fields_wrapper` | filter | `bool` | `$use, $formId, $config` | Whether to wrap fields in a container div (default `true`) |
 | `oriel_form_fields_wrapper_class` | filter | `string` | `$class, $formId, $config` | Fields container div class |
 | `oriel_form_submit_class` | filter | `string` | `$class, $formId, $config` | Submit button wrapper class |
+| `oriel_form_submit_inner_class` | filter | `string` | `$class, $formId, $config` | Submit button inner wrapper class (default `oriel-form__submit-input`) |
 | `oriel_form_toggle_class` | filter | `string` | `$class, $formId` | Toggle button class (when using `hide` option) |
 | `oriel_form_hidden_class` | filter | `string` | `$class, $formId` | Hidden form wrapper class (when using `hide` option) |
 
@@ -246,6 +258,18 @@ All return `string` (HTML), default `''`. Args: `$html, $formId, $config`.
 | `oriel_form_submit_before` | filter | HTML inserted before submit button |
 | `oriel_form_submit_after` | filter | HTML inserted after submit button |
 
+#### Field IDs, Names, and Attributes
+
+All args: `$value, $field, $formId`.
+
+| Hook | Type | Return | Description |
+| ---- | ---- | ------ | ----------- |
+| `oriel_field_input_id` | filter | `string` | Input element id (default `oriel_{fieldId}`). Propagates to label `for`, error `data-error-for`, and input name. |
+| `oriel_field_input_name` | filter | `string` | Input element name (default `oriel[oriel_{fieldId}]`) |
+| `oriel_field_input_attrs` | filter | `array` | Extra attributes on input element (default `[]`) |
+| `oriel_field_label_wrapper_attrs` | filter | `array` | Extra attributes on label wrapper div (default `[]`) |
+| `oriel_form_submit_button_attrs` | filter | `array` | Extra attributes on submit button (default `[]`). Args: `$attrs, $formId, $config`. |
+
 #### Field CSS Classes
 
 All return `string`. Args: `$class, $field, $formId`.
@@ -256,6 +280,8 @@ All return `string`. Args: `$class, $field, $formId`.
 | `oriel_field_use_label_wrapper` | filter | `bool` — whether to wrap label in a div (default `true`) |
 | `oriel_field_label_wrapper_class` | filter | Label wrapper div class |
 | `oriel_field_label_class` | filter | `<label>` element class |
+| `oriel_field_input_wrapper_class` | filter | Input wrapper div class (default `oriel-field__input`) |
+| `oriel_field_input_class` | filter | Input element class (default `''`) |
 | `oriel_field_required_symbol` | filter | Required indicator character (default `'*'`) |
 | `oriel_field_required_class` | filter | Required indicator `<span>` class |
 | `oriel_field_description_class` | filter | Description paragraph class |
@@ -290,3 +316,29 @@ All return `string`. Args: `$class, $field, $formId`.
 | `oriel_email_to` | filter | `string` | `$to, $formId, $postId` | Recipient email address |
 | `oriel_email_subject` | filter | `string` | `$subject, $formId, $postId` | Email subject line |
 | `oriel_email_content` | filter | `string` | `$html, $formId, $postId` | Email HTML body |
+
+## Compat Mode
+
+Oriel can emulate the HTML output of other form plugins so existing CSS applies without changes. Compat mode is enabled per-form via the `compat` option.
+
+### tghpmb (Meta Box Frontend Submission)
+
+Swaps all Oriel class names and DOM attributes to match Meta Box's `rwmb-*` output. Existing stylesheets targeting `.tghpform`, `.rwmb-field`, `.rwmb-label`, `.rwmb-input`, etc. will apply.
+
+```php
+$forms['contact_block_generic'] = [
+    'options' => [
+        'compat'        => 'tghpmb',
+        'compat_prefix' => '_tghpcontact_',
+        'submit_class'  => 'rwmb-button button button--blue-dark',
+    ],
+    'fields' => [
+        ['id' => 'sender_email', 'name' => 'Email',   'type' => 'email', 'required' => true, 'placeholder' => 'Email'],
+        ['id' => 'message',      'name' => 'Message', 'type' => 'text',  'required' => true, 'placeholder' => 'Message'],
+    ],
+];
+```
+
+**What changes:** Outer wrapper class (`tghpform`), form element class/id (`rwmb-form mbfs-form`), fields wrapper (`rwmb-form-fields form`), field wrappers (`rwmb-field rwmb-{type}-wrapper`), label/input wrappers (`rwmb-label`/`rwmb-input`), required span (`rwmb-required`), input classes (`rwmb-{type}`), submit structure (`rwmb-button-wrapper`), and `aria-labelledby` attributes using the configured prefix.
+
+**What stays the same:** Input `id`/`name` format (still `oriel_*`), security fields, error placeholders, form processing pipeline.
