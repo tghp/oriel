@@ -6,6 +6,7 @@ class RestResponseStep implements StepInterface
 {
     public function process(ProcessingContext $context): ProcessingContext
     {
+        // Non-REST requests are handled by RedirectStep.
         if (!$context->isRest) {
             return $context;
         }
