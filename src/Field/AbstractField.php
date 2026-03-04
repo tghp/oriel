@@ -142,8 +142,11 @@ abstract class AbstractField implements FieldInterface
     {
         $id = $this->getInputId($field, $formId);
         $errorClass = apply_filters('oriel_field_error_class', 'oriel-field__error', $field, $formId);
+        $error = $field['error'] ?? '';
 
-        return '<div class="' . $errorClass . '" data-error-for="' . esc_attr($id) . '"></div>';
+        return '<div class="' . $errorClass . '" data-error-for="' . esc_attr($id) . '">'
+            . esc_html($error)
+            . '</div>';
     }
 
     /**

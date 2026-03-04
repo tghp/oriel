@@ -149,16 +149,6 @@ class FormRenderer
             }
 
             $fieldHtml = $instance->render($field, $value, $formId);
-
-            // If there's an error, inject it into the error placeholder div.
-            if (!empty($field['error'])) {
-                $fieldHtml = preg_replace(
-                    '/(<div[^>]*data-error-for="' . preg_quote(esc_attr($fieldId), '/') . '"[^>]*>)<\/div>/',
-                    '$1' . esc_html($field['error']) . '</div>',
-                    $fieldHtml
-                );
-            }
-
             $fieldHtml = apply_filters('oriel_field_html', $fieldHtml, $field, $formId);
 
             $html .= $fieldHtml;
