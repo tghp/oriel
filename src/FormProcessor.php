@@ -23,11 +23,15 @@ class FormProcessor
     /** @var array */
     private $data;
 
-    public function __construct(FormRegistry $registry, string $formId, array $data)
+    /** @var array */
+    private $requestData;
+
+    public function __construct(FormRegistry $registry, string $formId, array $data, array $requestData = [])
     {
         $this->registry = $registry;
         $this->formId = $formId;
         $this->data = $data;
+        $this->requestData = $requestData;
     }
 
     /**
@@ -54,6 +58,8 @@ class FormProcessor
             $this->data,
             $isRest
         );
+
+        $context->requestData = $this->requestData;
 
         $steps = [
             new SecurityStep(),

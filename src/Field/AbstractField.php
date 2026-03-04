@@ -175,7 +175,13 @@ abstract class AbstractField implements FieldInterface
      */
     protected function getInputName(array $field, string $formId): string
     {
-        $name = 'oriel[' . $this->getInputId($field, $formId) . ']';
+        $fieldId = $field['id'];
+
+        if (!$fieldId) {
+            $fieldId = Util::slugify($field['name']);
+        }
+
+        $name = 'oriel[' . esc_attr($fieldId) . ']';
 
         return apply_filters('oriel_field_input_name', $name, $field, $formId);
     }

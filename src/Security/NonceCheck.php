@@ -12,7 +12,7 @@ class NonceCheck implements SecurityCheckInterface
             return null;
         }
 
-        $nonce = $_POST['_oriel_nonce'] ?? '';
+        $nonce = $context->requestData['_oriel_nonce'] ?? '';
 
         if (!wp_verify_nonce($nonce, 'oriel_submit_' . $context->formId)) {
             return 'Submission rejected.';

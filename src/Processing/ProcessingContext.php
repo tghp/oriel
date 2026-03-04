@@ -22,6 +22,9 @@ class ProcessingContext
     /** @var bool */
     public $shouldHalt = false;
 
+    /** @var array Full request data (POST params or REST params). */
+    public $requestData = [];
+
     /** @var bool */
     public $isRest = false;
 

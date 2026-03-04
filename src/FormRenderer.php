@@ -5,6 +5,11 @@ namespace Oriel;
 class FormRenderer
 {
     /**
+     * @var bool Whether the script has been enqueued this request.
+     */
+    private static $scriptEnqueued = false;
+
+    /**
      * @var array Form configuration from the registry.
      */
     private $config;
@@ -35,6 +40,11 @@ class FormRenderer
      */
     public function render(): string
     {
+        if (!self::$scriptEnqueued) {
+            wp_enqueue_script('oriel');
+            self::$scriptEnqueued = true;
+        }
+
         $formId = $this->formId;
         $options = $this->config['options'] ?? [];
         $fields = $this->config['fields'] ?? [];
@@ -105,6 +115,11 @@ class FormRenderer
         }
 
         $html .= ' class="' . $formElementClass . '" enctype="multipart/form-data"';
+
+        if (!empty($options['ajax'])) {
+            $html .= ' data-oriel-ajax="' . esc_attr(rest_url('oriel/v1/submit')) . '"';
+        }
+
         $html .= $this->renderAttributes($formElementAttrs);
         $html .= '>';
         $html .= '<input type="hidden" name="oriel_form_id" value="' . esc_attr($formId) . '">';

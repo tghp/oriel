@@ -54,6 +54,14 @@ class Plugin
         $this->registry = new FormRegistry();
         $this->initCompat();
 
+        wp_register_script(
+            'oriel',
+            ORIEL_PLUGIN_URL . 'assets/oriel.js',
+            [],
+            ORIEL_VERSION,
+            true
+        );
+
         add_shortcode('oriel_form', [$this, 'shortcode']);
         add_action('template_redirect', [$this, 'handleSubmission']);
     }
@@ -109,7 +117,7 @@ class Plugin
             ? $_POST['oriel']
             : [];
 
-        $processor = new FormProcessor($this->registry, $formId, $data);
+        $processor = new FormProcessor($this->registry, $formId, $data, $_POST);
         $processor->run();
     }
 
@@ -134,7 +142,7 @@ class Plugin
         $data = $request->get_param('oriel');
         $data = is_array($data) ? $data : [];
 
-        $processor = new FormProcessor($this->registry, $formId, $data);
+        $processor = new FormProcessor($this->registry, $formId, $data, $request->get_params());
         $result = $processor->run();
 
         return $result->restResponse;

@@ -43,7 +43,7 @@ class HoneypotCheck implements SecurityCheckInterface
             return null;
         }
 
-        $value = $_POST[$fieldName] ?? null;
+        $value = $context->requestData[$fieldName] ?? null;
 
         if ($value !== null && $value !== '') {
             return 'Submission rejected.';

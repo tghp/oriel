@@ -81,7 +81,7 @@ add_filter('oriel_field_types', function (array $types): array {
 | ------------------------- | ----------------------------------------------------------------------------------------- |
 | `redirect`                | URL to redirect to after submission                                                       |
 | `confirmation`            | Success message shown after submission                                                    |
-| `ajax`                    | Boolean, enables AJAX submission via REST API                                             |
+| `ajax`                    | Boolean, enables AJAX submission via REST API (see [AJAX Submissions](#ajax-submissions)) |
 | `email`                   | Array with `email` (recipient) and `title` (subject) keys                                 |
 | `delete_after_processing` | Delete the submission post after hooks fire (unless `_oriel_do_not_delete` meta is `'1'`) |
 | `class`                   | Extra CSS class on form wrapper                                                           |
@@ -98,6 +98,24 @@ Submissions are stored as the `oriel_submission` custom post type. Field values 
 $value = oriel_get_submission_data($postId, 'email');
 // equivalent to: get_post_meta($postId, '_oriel_email', true);
 ```
+
+## AJAX Submissions
+
+When `'ajax' => true` is set in form options, the form submits via `fetch()` to the REST API instead of a full page reload.
+
+- Validation errors display inline next to their fields
+- Success shows the confirmation message and resets the form
+- If `redirect` is set, the browser navigates after success
+- Security fields (honeypot, timing token, nonce) are included automatically via `FormData`
+- The timing token is regenerated after each successful submission
+
+When `ajax` is `false` (default), forms POST normally and redirect back with `?oriel-submitted` or `?oriel-errors` query params. The JS handles scrolling to the form on reload.
+
+The `oriel` script is enqueued automatically whenever any form renders. It provides:
+
+1. **Scroll-to-form** — scrolls to the form on page load when `?oriel-errors={id}` or `?oriel-submitted={id}` is present
+2. **Toggle buttons** — expands/collapses forms using the `hide` shortcode option
+3. **AJAX submission** — only on forms with `ajax` enabled
 
 ## REST API
 
@@ -268,7 +286,7 @@ All args: `$value, $field, $formId`.
 | Hook                              | Type   | Return   | Description                                                                                                      |
 | --------------------------------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
 | `oriel_field_input_id`            | filter | `string` | Input element id (default `oriel_{fieldId}`). Propagates to label `for`, error `data-error-for`, and input name. |
-| `oriel_field_input_name`          | filter | `string` | Input element name (default `oriel[oriel_{fieldId}]`)                                                            |
+| `oriel_field_input_name`          | filter | `string` | Input element name (default `oriel[{fieldId}]`)                                                                  |
 | `oriel_field_input_attrs`         | filter | `array`  | Extra attributes on input element (default `[]`)                                                                 |
 | `oriel_field_label_wrapper_attrs` | filter | `array`  | Extra attributes on label wrapper div (default `[]`)                                                             |
 | `oriel_form_submit_button_attrs`  | filter | `array`  | Extra attributes on submit button (default `[]`). Args: `$attrs, $formId, $config`.                              |

@@ -12,7 +12,7 @@ class TimingCheck implements SecurityCheckInterface
     {
         $minTime = (int) apply_filters('oriel_security_min_time', 3);
 
-        $token = $_POST[self::FIELD_NAME] ?? '';
+        $token = $context->requestData[self::FIELD_NAME] ?? '';
 
         if (empty($token)) {
             return 'Submission rejected.';
