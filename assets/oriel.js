@@ -8,25 +8,25 @@
    * If the form is inside a hidden toggle, expands it first.
    */
   function handleScrollOnLoad() {
-    var params = new URLSearchParams(window.location.search);
-    var targetId = params.get('oriel-errors') || params.get('oriel-submitted');
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get('oriel-errors') || params.get('oriel-submitted');
 
     if (!targetId) {
       return;
     }
 
-    var wrapper = document.getElementById('oriel-' + targetId);
+    const wrapper = document.getElementById(`oriel-${targetId}`);
 
     if (!wrapper) {
       return;
     }
 
     // If inside a hidden toggle container, expand it first.
-    var hiddenParent = wrapper.closest('[hidden]');
+    const hiddenParent = wrapper.closest('[hidden]');
 
     if (hiddenParent) {
-      var toggleBtn = document.querySelector(
-        '[aria-controls="' + hiddenParent.id + '"]'
+      const toggleBtn = document.querySelector(
+        `[aria-controls="${hiddenParent.id}"]`
       );
 
       if (toggleBtn) {
@@ -44,28 +44,28 @@
    * Toggles hidden/aria-expanded on the target element.
    */
   function initToggles() {
-    var toggles = document.querySelectorAll('.oriel-form__toggle');
+    const toggles = document.querySelectorAll('.oriel-form__toggle');
 
-    for (var i = 0; i < toggles.length; i++) {
-      toggles[i].addEventListener('click', handleToggle);
+    for (const toggle of toggles) {
+      toggle.addEventListener('click', handleToggle);
     }
   }
 
   function handleToggle(e) {
-    var btn = e.currentTarget;
-    var targetId = btn.getAttribute('aria-controls');
+    const btn = e.currentTarget;
+    const targetId = btn.getAttribute('aria-controls');
 
     if (!targetId) {
       return;
     }
 
-    var target = document.getElementById(targetId);
+    const target = document.getElementById(targetId);
 
     if (!target) {
       return;
     }
 
-    var isHidden = target.hasAttribute('hidden');
+    const isHidden = target.hasAttribute('hidden');
 
     if (isHidden) {
       target.removeAttribute('hidden');
@@ -80,20 +80,20 @@
    * Initialize AJAX submission on forms with [data-oriel-ajax].
    */
   function initAjaxForms() {
-    var forms = document.querySelectorAll('form[data-oriel-ajax]');
+    const forms = document.querySelectorAll('form[data-oriel-ajax]');
 
-    for (var i = 0; i < forms.length; i++) {
-      forms[i].addEventListener('submit', handleAjaxSubmit);
+    for (const form of forms) {
+      form.addEventListener('submit', handleAjaxSubmit);
     }
   }
 
   function handleAjaxSubmit(e) {
     e.preventDefault();
 
-    var form = e.currentTarget;
-    var ajaxUrl = form.getAttribute('data-oriel-ajax');
-    var wrapper = form.closest('.oriel-form');
-    var submitBtn = form.querySelector('[type="submit"]');
+    const form = e.currentTarget;
+    const ajaxUrl = form.getAttribute('data-oriel-ajax');
+    const wrapper = form.closest('.oriel-form');
+    const submitBtn = form.querySelector('[type="submit"]');
 
     // Prevent double submit.
     if (form.classList.contains('oriel-form--submitting')) {
@@ -115,13 +115,13 @@
       body: new FormData(form),
       credentials: 'same-origin',
     })
-      .then(function (response) {
-        return response.json().then(function (data) {
+      .then((response) => {
+        return response.json().then((data) => {
           return { status: response.status, body: data };
         });
       })
-      .then(function (result) {
-        var body = result.body;
+      .then((result) => {
+        const { body } = result;
 
         if (body.success) {
           // Redirect if requested.
@@ -131,7 +131,7 @@
           }
 
           // Show success message.
-          var message = body.message || 'Your submission has been received.';
+          const message = body.message || 'Your submission has been received.';
           showMessage(wrapper, form, message, 'success');
 
           // Reset form and regenerate timing token.
@@ -150,11 +150,11 @@
           );
         } else {
           // Security or generic error.
-          var errorMsg = body.message || 'Submission rejected.';
+          const errorMsg = body.message || 'Submission rejected.';
           showMessage(wrapper, form, errorMsg, 'error');
         }
       })
-      .catch(function () {
+      .catch(() => {
         showMessage(
           wrapper,
           form,
@@ -162,7 +162,7 @@
           'error'
         );
       })
-      .finally(function () {
+      .finally(() => {
         form.classList.remove('oriel-form--submitting');
 
         if (submitBtn) {
@@ -183,10 +183,10 @@
       return;
     }
 
-    var messages = wrapper.querySelectorAll('.oriel-form__message');
+    const messages = wrapper.querySelectorAll('.oriel-form__message');
 
-    for (var i = 0; i < messages.length; i++) {
-      messages[i].remove();
+    for (const message of messages) {
+      message.remove();
     }
   }
 
@@ -194,16 +194,16 @@
    * Clear all field-level errors.
    */
   function clearFieldErrors(form) {
-    var errorDivs = form.querySelectorAll('[data-error-for]');
+    const errorDivs = form.querySelectorAll('[data-error-for]');
 
-    for (var i = 0; i < errorDivs.length; i++) {
-      errorDivs[i].textContent = '';
+    for (const errorDiv of errorDivs) {
+      errorDiv.textContent = '';
     }
 
-    var errorFields = form.querySelectorAll('.oriel-field--has-error');
+    const errorFields = form.querySelectorAll('.oriel-field--has-error');
 
-    for (var i = 0; i < errorFields.length; i++) {
-      errorFields[i].classList.remove('oriel-field--has-error');
+    for (const errorField of errorFields) {
+      errorField.classList.remove('oriel-field--has-error');
     }
   }
 
@@ -215,8 +215,8 @@
       return;
     }
 
-    var div = document.createElement('div');
-    div.className = 'oriel-form__message oriel-form__message--' + type;
+    const div = document.createElement('div');
+    div.className = `oriel-form__message oriel-form__message--${type}`;
     div.textContent = text;
 
     wrapper.insertBefore(div, form);
@@ -229,20 +229,16 @@
    * data-error-for uses input IDs (e.g. "oriel_name").
    */
   function showFieldErrors(form, errors) {
-    for (var key in errors) {
-      if (!errors.hasOwnProperty(key)) {
-        continue;
-      }
-
-      var inputId = 'oriel_' + key;
-      var errorDiv = form.querySelector('[data-error-for="' + inputId + '"]');
+    for (const [key, value] of Object.entries(errors)) {
+      const inputId = `oriel_${key}`;
+      const errorDiv = form.querySelector(`[data-error-for="${inputId}"]`);
 
       if (errorDiv) {
-        errorDiv.textContent = errors[key];
+        errorDiv.textContent = value;
       }
 
       // Add error class to the field wrapper.
-      var fieldWrapper = form.querySelector('.oriel-field--' + inputId);
+      const fieldWrapper = form.querySelector(`.oriel-field--${inputId}`);
 
       if (fieldWrapper) {
         fieldWrapper.classList.add('oriel-field--has-error');
@@ -254,7 +250,7 @@
    * Regenerate the timing token after a successful AJAX submission.
    */
   function regenerateTimingToken(form) {
-    var tokenInput = form.querySelector('[name="_oriel_tk"]');
+    const tokenInput = form.querySelector('[name="_oriel_tk"]');
 
     if (tokenInput) {
       tokenInput.value = btoa(String(Math.floor(Date.now() / 1000)));
