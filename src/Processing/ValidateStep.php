@@ -14,7 +14,7 @@ class ValidateStep implements StepInterface
             $type = $field['type'] ?? 'text';
             $fieldInstance = $plugin->getFieldInstance($type);
 
-            if (!$fieldInstance) {
+            if (!$fieldInstance || $fieldInstance->isTransient()) {
                 continue;
             }
 

@@ -2,6 +2,112 @@
   'use strict';
 
   /**
+   * Captcha provider configuration map.
+   *
+   * Each provider defines how to check readiness, render a widget, and reset it.
+   * Adding a new provider (e.g. hCaptcha) is a single entry here.
+   */
+  const captchaProviders = {
+    recaptcha: {
+      isReady() {
+        return (
+          typeof grecaptcha !== 'undefined' &&
+          typeof grecaptcha.render === 'function'
+        );
+      },
+      render(el, sitekey, callback) {
+        return grecaptcha.render(el, { sitekey, callback });
+      },
+      reset(widgetId) {
+        grecaptcha.reset(widgetId);
+      },
+    },
+    turnstile: {
+      isReady() {
+        return (
+          typeof turnstile !== 'undefined' &&
+          typeof turnstile.render === 'function'
+        );
+      },
+      render(el, sitekey, callback) {
+        return turnstile.render(el, { sitekey, callback });
+      },
+      reset(widgetId) {
+        turnstile.reset(widgetId);
+      },
+    },
+  };
+
+  /** @type {Map<HTMLFormElement, {provider: string, widgetId: *}>} */
+  const captchaWidgets = new Map();
+
+  /**
+   * Render all uninitialized captcha widgets whose provider SDK is ready.
+   */
+  function renderCaptchaWidgets() {
+    const widgets = document.querySelectorAll('.oriel-captcha');
+
+    for (const widget of widgets) {
+      if (widget.dataset.captchaRendered) {
+        continue;
+      }
+
+      const provider = widget.dataset.captchaProvider;
+      const sitekey = widget.dataset.captchaSitekey;
+      const config = captchaProviders[provider];
+
+      if (!config || !config.isReady()) {
+        continue;
+      }
+
+      const form = widget.closest('form');
+      const tokenInput = form
+        ? form.querySelector('input[name="oriel[_captcha_token]"]')
+        : null;
+
+      const widgetId = config.render(widget, sitekey, function (token) {
+        if (tokenInput) {
+          tokenInput.value = token;
+        }
+      });
+
+      widget.dataset.captchaRendered = 'true';
+
+      if (form) {
+        captchaWidgets.set(form, { provider, widgetId });
+      }
+    }
+  }
+
+  /**
+   * Reset the captcha widget for a given form (after successful AJAX submit).
+   */
+  function resetCaptchaWidget(form) {
+    const info = captchaWidgets.get(form);
+
+    if (!info) {
+      return;
+    }
+
+    const config = captchaProviders[info.provider];
+
+    if (config) {
+      config.reset(info.widgetId);
+    }
+
+    const tokenInput = form.querySelector(
+      'input[name="oriel[_captcha_token]"]'
+    );
+
+    if (tokenInput) {
+      tokenInput.value = '';
+    }
+  }
+
+  // Global callback invoked by the captcha SDK once it has loaded.
+  window.orielCaptchaReady = renderCaptchaWidgets;
+
+  /**
    * Scroll-to-form on page load.
    *
    * Checks for ?oriel-errors={id} or ?oriel-submitted={id} query params.
@@ -137,6 +243,7 @@
           // Reset form and regenerate timing token.
           form.reset();
           regenerateTimingToken(form);
+          resetCaptchaWidget(form);
         } else if (body.errors) {
           // Validation errors — show per-field errors.
           showFieldErrors(form, body.errors);
@@ -268,5 +375,6 @@
     handleScrollOnLoad();
     initToggles();
     initAjaxForms();
+    renderCaptchaWidgets();
   }
 })();

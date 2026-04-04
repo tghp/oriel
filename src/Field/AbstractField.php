@@ -77,6 +77,14 @@ abstract class AbstractField implements FieldInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function isTransient(): bool
+    {
+        return false;
+    }
+
+    /**
      * Render the label element.
      */
     protected function renderLabel(array $field, string $formId): string

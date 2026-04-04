@@ -2,6 +2,7 @@
 
 namespace Oriel\Processing;
 
+use Oriel\Plugin;
 use Oriel\PostType;
 
 class CreatePostStep implements StepInterface
@@ -30,7 +31,16 @@ class CreatePostStep implements StepInterface
         $context->postId = $postId;
 
         // Save each field value as post meta with prefix.
+        $plugin = Plugin::instance();
+
         foreach ($context->formConfig['fields'] as $field) {
+            $type = $field['type'] ?? 'text';
+            $fieldInstance = $plugin->getFieldInstance($type);
+
+            if ($fieldInstance && $fieldInstance->isTransient()) {
+                continue;
+            }
+
             $id = $field['id'];
             $value = $context->submittedData[$id] ?? '';
             update_post_meta($postId, ORIEL_META_PREFIX . $id, $value);

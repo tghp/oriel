@@ -195,6 +195,7 @@ class Plugin
             'select' => Field\SelectField::class,
             'radio' => Field\RadioField::class,
             'hidden' => Field\HiddenField::class,
+            'captcha' => Field\CaptchaField::class,
         ];
 
         return apply_filters('oriel_field_types', $types);

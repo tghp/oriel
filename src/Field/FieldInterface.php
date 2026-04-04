@@ -31,4 +31,14 @@ interface FieldInterface
      * @return mixed
      */
     public function sanitize(array $field, $value);
+
+    /**
+     * Whether this field is transient (should not be stored or validated).
+     *
+     * Transient fields exist only for rendering purposes (e.g. captcha widgets)
+     * and are skipped by the validation and storage pipeline steps.
+     *
+     * @return bool
+     */
+    public function isTransient(): bool;
 }
