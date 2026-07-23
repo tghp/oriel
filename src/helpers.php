@@ -25,6 +25,11 @@ if (! function_exists('oriel_form')) {
             return '';
         }
 
+        // The renderer derives the form ID from args['id']. Ensure it is always
+        // set to the resolved ID so direct helper calls (oriel_form('contact'))
+        // work the same as the shortcode path, which passes id via its atts.
+        $args['id'] = $id;
+
         $renderer = new \Oriel\FormRenderer($form, $args);
 
         return $renderer->render();
