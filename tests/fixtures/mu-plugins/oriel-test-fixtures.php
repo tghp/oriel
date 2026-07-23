@@ -48,6 +48,11 @@ if ($orielTestRaw !== '') {
  */
 add_filter('oriel_trusted_ip_header', fn () => 'X-Oriel-Test-IP');
 
+// WordPress defaults the From to wordpress@{host} = wordpress@localhost,
+// which PHPMailer rejects as an invalid address — silently failing every
+// wp_mail(). Use a routable-looking sender.
+add_filter('wp_mail_from', fn () => 'wordpress@example.test');
+
 // Route all mail to Mailpit so tests can assert on delivered messages.
 add_action('phpmailer_init', function ($phpmailer): void {
     $phpmailer->isSMTP();
