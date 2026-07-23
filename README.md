@@ -249,7 +249,7 @@ Oriel uses a multi-layered security approach designed to work under full-page ca
 **Built-in checks (in order):**
 
 1. **Honeypot** — hidden field that bots auto-fill. Field name is dynamically chosen to avoid collisions with form field IDs.
-2. **Rate limiting** — IP-based throttle using transients. Sliding window: the counter resets after a full window of inactivity.
+2. **Rate limiting** — IP-based throttle using transients. Sliding window: the counter resets after a full window of inactivity. See [Client IP resolution](#client-ip-resolution) if the site sits behind a proxy or CDN.
 3. **Timing** — rejects submissions that arrive too quickly (< 3s) or too long after render (> 24h).
 4. **Nonce** — standard WP nonce verification, logged-in users only.
 
@@ -264,6 +264,9 @@ Oriel uses a multi-layered security approach designed to work under full-page ca
 | `oriel_security_min_time`            | Minimum seconds between render and submit              | `3`                                                        |
 | `oriel_security_max_time`            | Maximum seconds between render and submit              | `86400` (24h)                                              |
 | `oriel_security_error_message`       | Rejection message (keep generic to avoid info leakage) | `'Submission rejected.'`                                   |
+| `oriel_trusted_ip_header`            | Forwarding header to resolve the client IP from        | `null` (`ORIEL_TRUSTED_IP_HEADER` constant if defined)     |
+| `oriel_trusted_ip_environment`       | Hosting environment shorthand for the above            | `null` (`ORIEL_TRUSTED_IP_ENVIRONMENT` constant if defined) |
+| `oriel_client_ip`                    | Final resolved client IP                               | Resolved IP (see [Client IP resolution](#client-ip-resolution)) |
 | `oriel_captcha_providers`            | Map of provider slug → class name                      | `['recaptcha' => RecaptchaProvider::class, 'turnstile' => TurnstileProvider::class]` |
 
 #### Adding a custom security check
@@ -292,6 +295,45 @@ add_filter('oriel_security_checks', function (array $checks): array {
 ```php
 add_filter('oriel_security_rate_limit', fn () => 10);     // 10 submissions
 add_filter('oriel_security_rate_window', fn () => 300);    // per 5 minutes
+```
+
+### Client IP resolution
+
+Rate limiting keys off the client IP. By default this is `REMOTE_ADDR` — the only value a client can't spoof. But behind a reverse proxy or CDN (Cloudflare, a load balancer, nginx in front of PHP-FPM), `REMOTE_ADDR` is the proxy's IP, so all visitors share one rate limit bucket.
+
+Forwarding headers like `X-Forwarded-For` are client-controlled and can't be trusted automatically — Oriel only reads one when you declare your proxy topology. Do **not** configure a header unless the proxy actually sets it; on an unproxied site this would let clients spoof their IP.
+
+**Environment shorthand** — for common setups, name the platform:
+
+```php
+// wp-config.php
+define('ORIEL_TRUSTED_IP_ENVIRONMENT', 'cloudflare');
+
+// …or via filter
+add_filter('oriel_trusted_ip_environment', fn () => 'cloudflare');
+```
+
+Supported values: `cloudflare` (CF-Connecting-IP), `kinsta` (Cloudflare-shaped), `wpengine` (X-Forwarded-For).
+
+**Explicit header** — for anything else, name the header your proxy sets. Takes precedence over the environment shorthand:
+
+```php
+// wp-config.php
+define('ORIEL_TRUSTED_IP_HEADER', 'X-Real-IP');
+
+// …or via filter
+add_filter('oriel_trusted_ip_header', fn () => 'X-Real-IP');
+```
+
+Chain-style headers (`X-Forwarded-For`) are parsed right-to-left, taking the first public IP — trusted proxies append to the right, so client-seeded entries are ignored. Every value is validated as an IP; missing or invalid headers fall back to `REMOTE_ADDR`.
+
+**Full control** — for multi-hop or unusual topologies, filter the resolved value directly:
+
+```php
+add_filter('oriel_client_ip', function (string $ip): string {
+    // Custom resolution logic...
+    return $ip;
+});
 ```
 
 ## Hooks
@@ -393,6 +435,9 @@ All return `string`. Args: `$class, $field, $formId`.
 | `oriel_security_min_time`            | filter | `int`    | `$seconds`    | Minimum seconds between render and submit (default `3`)     |
 | `oriel_security_max_time`            | filter | `int`    | `$seconds`    | Maximum seconds between render and submit (default `86400`) |
 | `oriel_security_error_message`       | filter | `string` | `$message`    | Rejection message (keep generic to avoid info leakage)      |
+| `oriel_trusted_ip_header`            | filter | `?string` | `$header`    | Forwarding header to resolve the client IP from (default `ORIEL_TRUSTED_IP_HEADER` constant or `null`) |
+| `oriel_trusted_ip_environment`       | filter | `?string` | `$environment` | Environment shorthand: `cloudflare`, `kinsta`, `wpengine` (default `ORIEL_TRUSTED_IP_ENVIRONMENT` constant or `null`) |
+| `oriel_client_ip`                    | filter | `string` | `$ip`         | Final resolved client IP used for rate limiting             |
 | `oriel_captcha_providers`            | filter | `array`  | `$providers`  | Map of provider slug → class name for captcha verification  |
 
 ### Processing

@@ -11,7 +11,7 @@ class RateLimitCheck implements SecurityCheckInterface
         $maxAttempts = (int) apply_filters('oriel_security_rate_limit', 5);
         $window = (int) apply_filters('oriel_security_rate_window', 600);
 
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $ip = ClientIp::resolve();
 
         if (empty($ip)) {
             return null;
