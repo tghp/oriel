@@ -24,6 +24,18 @@ class TghpmbCompat
     }
 
     /**
+     * Map Oriel field types to their tghpmb/Meta Box equivalents for class names.
+     */
+    private function aliasType(string $type): string
+    {
+        if ($type === 'captcha') {
+            return 'recaptcha';
+        }
+
+        return $type;
+    }
+
+    /**
      * Get the tghpmb field prefix for a form.
      * Falls back to '_tghp{formId}_' if not explicitly set.
      */
@@ -41,6 +53,8 @@ class TghpmbCompat
 
     private function registerHooks(): void
     {
+        add_action('oriel_form_render', [$this, 'enqueueAssets']);
+
         // Form-level.
         add_filter('oriel_form_wrapper_class', [$this, 'filterWrapperClass'], 10, 3);
         add_filter('oriel_form_wrapper_id', [$this, 'filterWrapperId'], 10, 3);
@@ -63,6 +77,25 @@ class TghpmbCompat
         add_filter('oriel_form_submit_class', [$this, 'filterSubmitClass'], 10, 3);
         add_filter('oriel_form_submit_inner_class', [$this, 'filterSubmitInnerClass'], 10, 3);
         add_filter('oriel_form_submit_button_attrs', [$this, 'filterSubmitButtonAttrs'], 10, 3);
+    }
+
+    /**
+     * Enqueued at render time (not wp_enqueue_scripts) so the stylesheet
+     * prints in the footer after the theme CSS, matching where Meta Box's
+     * own late-enqueued styles land in the cascade.
+     */
+    public function enqueueAssets(string $formId): void
+    {
+        if (!$this->isCompat($formId)) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'oriel-compat-tghpmb',
+            ORIEL_PLUGIN_URL . 'assets/compat/tghpmb.css',
+            [],
+            ORIEL_VERSION
+        );
     }
 
     // ── Form-level ──────────────────────────────────────────────────
@@ -131,7 +164,7 @@ class TghpmbCompat
             return $class;
         }
 
-        $type = $field['type'] ?? 'text';
+        $type = $this->aliasType($field['type'] ?? 'text');
         $fieldId = $field['id'] ?? '';
 
         $classes = 'rwmb-field rwmb-' . esc_attr($type) . '-wrapper field-' . esc_attr($fieldId);
@@ -198,7 +231,7 @@ class TghpmbCompat
             return $class;
         }
 
-        $type = $field['type'] ?? 'text';
+        $type = $this->aliasType($field['type'] ?? 'text');
 
         return 'rwmb-' . esc_attr($type);
     }

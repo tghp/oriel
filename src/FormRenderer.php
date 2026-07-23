@@ -46,6 +46,9 @@ class FormRenderer
         }
 
         $formId = $this->formId;
+
+        do_action('oriel_form_render', $formId, $this->config);
+
         $options = $this->config['options'] ?? [];
         $fields = $this->config['fields'] ?? [];
 
