@@ -53,7 +53,10 @@ class FormRenderer
         $fields = $this->config['fields'] ?? [];
 
         // Load stored state (values + errors) from a previous failed submission.
-        $state = $this->getStoredState();
+        // Only when redirected back with ?oriel-errors: for guests, reading
+        // state starts a PHP session, and a PHPSESSID cookie on a plain render
+        // would make the page uncacheable under full-page caching.
+        $state = $this->hasErrors() ? $this->getStoredState() : null;
         $storedValues = $state['values'] ?? [];
         $storedErrors = $state['errors'] ?? [];
 
