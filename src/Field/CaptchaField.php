@@ -60,7 +60,16 @@ class CaptchaField extends AbstractField
 
         $this->enqueueProviderScript($provider);
 
-        $html = '<div class="oriel-captcha"';
+        // oriel.js targets .oriel-captcha, so the filtered class is appended
+        // rather than replacing it.
+        $class = 'oriel-captcha';
+        $inputClass = apply_filters('oriel_field_input_class', '', $field, $formId);
+
+        if ($inputClass) {
+            $class .= ' ' . $inputClass;
+        }
+
+        $html = '<div class="' . esc_attr($class) . '"';
         $html .= ' data-captcha-provider="' . esc_attr($provider) . '"';
         $html .= ' data-captcha-sitekey="' . esc_attr($sitekey) . '"';
         $html .= '></div>';
