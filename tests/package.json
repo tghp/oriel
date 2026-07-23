@@ -1,0 +1,19 @@
+{
+  "name": "oriel-e2e",
+  "private": true,
+  "description": "Docker-backed Playwright E2E suite for the Oriel forms plugin.",
+  "scripts": {
+    "env:up": "docker compose -f docker/docker-compose.yml up -d --wait && npm run env:bootstrap",
+    "env:bootstrap": "docker compose -f docker/docker-compose.yml run --rm cli sh /opt/oriel/bootstrap.sh",
+    "env:down": "docker compose -f docker/docker-compose.yml down",
+    "env:destroy": "docker compose -f docker/docker-compose.yml down -v",
+    "env:flush-cache": "docker compose -f docker/docker-compose.yml exec nginx sh -c 'rm -rf /var/cache/nginx/oriel/* && nginx -s reload'",
+    "env:wp": "docker compose -f docker/docker-compose.yml run --rm cli wp",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "@types/node": "^22.0.0"
+  }
+}

@@ -1,0 +1,98 @@
+name: oriel-e2e
+
+# WP_HOME/WP_SITEURL follow the request host so the same install serves both
+# the uncached (8788) and cached (8789) nginx ports without canonical redirects.
+x-wp-config-extra: &wp-config-extra |
+  if (isset($$_SERVER['HTTP_HOST']) && $$_SERVER['HTTP_HOST']) {
+      define('WP_HOME', 'http://' . $$_SERVER['HTTP_HOST']);
+      define('WP_SITEURL', WP_HOME);
+  }
+  define('ORIEL_TEST', true);
+
+x-wp-env: &wp-env
+  WORDPRESS_DB_HOST: db
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_DB_PASSWORD: wordpress
+  WORDPRESS_DB_NAME: wordpress
+  WORDPRESS_CONFIG_EXTRA: *wp-config-extra
+
+x-wp-volumes: &wp-volumes
+  - wp_core:/var/www/html
+  - ../..:/var/www/html/wp-content/plugins/oriel
+  - ../fixtures/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  wp:
+    image: wordpress:${ORIEL_WP_TAG:-php8.3-fpm}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *wp-env
+    volumes: *wp-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/9000'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      wp:
+        condition: service_healthy
+    ports:
+      - "${ORIEL_HTTP_PORT:-8788}:80"
+      - "${ORIEL_HTTP_CACHED_PORT:-8789}:81"
+    volumes:
+      - wp_core:/var/www/html:ro
+      - ../..:/var/www/html/wp-content/plugins/oriel:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_cache:/var/cache/nginx/oriel
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${ORIEL_MAILPIT_PORT:-8790}:8025"
+
+  # Run-only helper: `docker compose run --rm cli wp <...>` or the bootstrap
+  # script. Not started by `up` (no ports, profiles gate it out).
+  cli:
+    image: wordpress:${ORIEL_CLI_TAG:-cli-php8.3}
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    user: "33:33"
+    environment:
+      <<: *wp-env
+      ORIEL_HTTP_PORT: ${ORIEL_HTTP_PORT:-8788}
+    volumes:
+      - wp_core:/var/www/html
+      - ../..:/var/www/html/wp-content/plugins/oriel
+      - ../fixtures/mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+      - ./bootstrap.sh:/opt/oriel/bootstrap.sh:ro
+
+volumes:
+  wp_core:
+  db_data:
+  nginx_cache:
