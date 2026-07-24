@@ -1,4 +1,17 @@
-# Oriel E2E Tests
+# Oriel Tests
+
+Two suites live here:
+
+- **Unit** (`Unit/`) — Pest, no WordPress required. WP functions are stubbed in
+  `wp-stubs.php` (loaded via `Pest.php`, which also resets stubs and `$_SERVER`
+  between tests). Run from the repo root: `composer test` (or
+  `./vendor/bin/pest`). Scenarios involving `ORIEL_*` constants shell out to
+  `bin/resolve-client-ip.php` in a fresh PHP process per test, since constants
+  can't be undefined and Pest can't use PHPUnit process isolation
+  ([pestphp/pest#910](https://github.com/pestphp/pest/issues/910)).
+- **E2E** (`e2e/`) — Docker-backed Playwright suite, documented below.
+
+## E2E
 
 Docker-backed Playwright E2E suite. It runs against a vanilla WordPress install
 with the Oriel plugin mounted alongside the fixture mu-plugin
