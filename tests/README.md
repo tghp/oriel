@@ -69,6 +69,7 @@ subject `Oriel Test: {form_id}` so specs can filter in Mailpit.
 | `kitchen_sink`           | `/kitchen-sink/`           | All 7 non-captcha field types, non-AJAX POST + redirect-back, confirmation      |
 | `kitchen_sink_ajax`      | `/kitchen-sink-ajax/`      | Same fields, AJAX (REST) submission with inline confirmation                     |
 | `security_min`           | `/security-min/`           | Security specs driven by `X-Oriel-Test` header overrides                         |
+| `security_min_ajax`      | `/security-min-ajax/`      | AJAX (REST) identity + nonce specs; stamps `_oriel_test_user_id` after process   |
 | `compat_tghpmb`          | `/compat-tghpmb/`          | `tghpmb` compat output (rwmb-* classes), prefix `_tghptest_`                     |
 | `captcha_turnstile`      | `/captcha-turnstile/`      | Turnstile widget + server verification passing                                   |
 | `captcha_turnstile_fail` | `/captcha-turnstile-fail/` | Turnstile widget yields a token but server verification fails                    |

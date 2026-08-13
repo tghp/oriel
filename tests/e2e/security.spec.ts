@@ -14,6 +14,7 @@ import { findSubmissionMeta } from '../support/wp';
  */
 
 const FORM_URL = '/security-min/';
+const SUBMIT_ENDPOINT = '/oriel/v1/submit';
 const FORM = 'form#oriel-form-security_min';
 const MARKER_INPUT = `${FORM} input[name="oriel[marker]"]`;
 // HoneypotCheck::CANDIDATES starts with 'comment'; security_min's only field
@@ -252,5 +253,133 @@ test.describe('nonce (logged-in only)', () => {
 
     await expectAccepted(page);
     expect(findSubmissionMeta(MARKER_META_KEY, marker)).not.toBeNull();
+  });
+
+  /**
+   * AJAX (REST) identity — issue #1. Without a wp_rest nonce, core's REST
+   * cookie auth demotes a logged-in submission to user 0, so after-process
+   * hooks run anonymously and NonceCheck silently skips. The fixture's
+   * oriel_after_process_security_min_ajax handler stamps the pipeline-time
+   * user ID as _oriel_test_user_id so these specs can observe it.
+   */
+  test.describe('REST identity (security_min_ajax)', () => {
+    const AJAX_FORM_URL = '/security-min-ajax/';
+    const AJAX_FORM = 'form#oriel-form-security_min_ajax';
+    const AJAX_ORIEL_NONCE_INPUT = `${AJAX_FORM} input[name="_oriel_nonce"]`;
+    const AJAX_REST_NONCE_INPUT = `${AJAX_FORM} input[name="_wpnonce"]`;
+    const AJAX_CONFIRMATION =
+      'Thanks — your security_min_ajax submission was received.';
+    const USER_ID_META_KEY = '_oriel_test_user_id';
+
+    async function submitAjaxMarker(page: Page, marker: string) {
+      await page.fill(`${AJAX_FORM} input[name="oriel[marker]"]`, marker);
+
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          (r) =>
+            r.url().includes(SUBMIT_ENDPOINT) &&
+            r.request().method() === 'POST',
+        ),
+        page.click(`${AJAX_FORM} [type="submit"]`),
+      ]);
+
+      return response;
+    }
+
+    test('logged-in AJAX submission carries a wp_rest nonce and keeps the user identity', async ({
+      page,
+    }) => {
+      const marker = uniqueMarker('sec-rest-id');
+
+      await loginAsAdmin(page);
+      await page.goto(AJAX_FORM_URL);
+
+      const restNonce = page.locator(AJAX_REST_NONCE_INPUT);
+      await expect(restNonce).toBeAttached();
+      await expect(restNonce).toHaveAttribute('type', 'hidden');
+      await expect(restNonce).not.toHaveValue('');
+
+      const response = await submitAjaxMarker(page, marker);
+      expect(response.status()).toBe(200);
+      await expect(page.locator('.oriel-form__message--success')).toHaveText(
+        AJAX_CONFIRMATION,
+      );
+
+      const meta = findSubmissionMeta(MARKER_META_KEY, marker);
+      expect(meta).not.toBeNull();
+      // Admin (user 1) submitted; after-process hooks must run as them.
+      expect(meta![USER_ID_META_KEY]).toBe('1');
+    });
+
+    test('anonymous AJAX render has no wp_rest nonce and processes as user 0', async ({
+      page,
+    }) => {
+      const marker = uniqueMarker('sec-rest-anon');
+
+      await page.goto(AJAX_FORM_URL);
+
+      // FPC stance unchanged: anonymous pages stay nonce-free and cacheable.
+      await expect(page.locator(AJAX_REST_NONCE_INPUT)).toHaveCount(0);
+
+      const response = await submitAjaxMarker(page, marker);
+      expect(response.status()).toBe(200);
+      await expect(page.locator('.oriel-form__message--success')).toHaveText(
+        AJAX_CONFIRMATION,
+      );
+
+      const meta = findSubmissionMeta(MARKER_META_KEY, marker);
+      expect(meta).not.toBeNull();
+      expect(meta![USER_ID_META_KEY]).toBe('0');
+    });
+
+    test('logged-in tampered _oriel_nonce is rejected on the REST path', async ({
+      page,
+    }) => {
+      const marker = uniqueMarker('sec-rest-badnonce');
+
+      await loginAsAdmin(page);
+      await page.goto(AJAX_FORM_URL);
+
+      await page.locator(AJAX_ORIEL_NONCE_INPUT).evaluate((el) => {
+        (el as HTMLInputElement).value = 'deadbeef00';
+      });
+
+      const response = await submitAjaxMarker(page, marker);
+      expect(response.status()).toBe(403);
+      await expect(page.locator('.oriel-form__message--error')).toHaveText(
+        'Submission rejected.',
+      );
+
+      expect(findSubmissionMeta(MARKER_META_KEY, marker)).toBeNull();
+    });
+
+    test('logged-in tampered _wpnonce is rejected by core with a surfaced error', async ({
+      page,
+    }) => {
+      const marker = uniqueMarker('sec-rest-badrest');
+
+      await loginAsAdmin(page);
+      await page.goto(AJAX_FORM_URL);
+
+      await page.locator(AJAX_REST_NONCE_INPUT).evaluate((el) => {
+        (el as HTMLInputElement).value = 'deadbeef00';
+      });
+
+      const response = await submitAjaxMarker(page, marker);
+
+      // Core's cookie auth rejects the whole request before the pipeline, so
+      // this error body is core-owned — ADR-0006's generic-message rule only
+      // governs the plugin's own rejections.
+      expect(response.status()).toBe(403);
+      const body = await response.json();
+      expect(body.code).toBe('rest_cookie_invalid_nonce');
+
+      // The bundled JS degrades to its generic failure handling.
+      await expect(page.locator('.oriel-form__message--error')).not.toHaveCount(
+        0,
+      );
+
+      expect(findSubmissionMeta(MARKER_META_KEY, marker)).toBeNull();
+    });
   });
 });

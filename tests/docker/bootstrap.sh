@@ -42,6 +42,7 @@ create_page() {
 create_page kitchen-sink          "Kitchen Sink"           '[oriel_form id="kitchen_sink"]'
 create_page kitchen-sink-ajax     "Kitchen Sink (AJAX)"    '[oriel_form id="kitchen_sink_ajax"]'
 create_page security-min          "Security Minimal"       '[oriel_form id="security_min"]'
+create_page security-min-ajax     "Security Minimal (AJAX)" '[oriel_form id="security_min_ajax"]'
 create_page compat-tghpmb         "Compat tghpmb"          '[oriel_form id="compat_tghpmb"]'
 create_page captcha-turnstile     "Captcha Turnstile"      '[oriel_form id="captcha_turnstile"]'
 create_page captcha-turnstile-fail "Captcha Turnstile Fail" '[oriel_form id="captcha_turnstile_fail"]'

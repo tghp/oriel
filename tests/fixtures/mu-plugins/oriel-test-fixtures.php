@@ -63,6 +63,15 @@ add_action('phpmailer_init', function ($phpmailer): void {
     $phpmailer->SMTPAutoTLS = false;
 });
 
+/*
+ * Observation channel for the REST identity regression (issue #1): stamp the
+ * pipeline-time user ID onto each security_min_ajax submission so specs can
+ * assert who oriel_after_process_* handlers ran as.
+ */
+add_action('oriel_after_process_security_min_ajax', function ($postId): void {
+    update_post_meta($postId, '_oriel_test_user_id', (string) get_current_user_id());
+});
+
 // Register the fixture forms.
 add_filter('oriel_forms', function (array $forms): array {
     // Shared field set for the two kitchen-sink variants — one field per
@@ -115,6 +124,18 @@ add_filter('oriel_forms', function (array $forms): array {
             'ajax'         => false,
             'confirmation' => 'Thanks — your security_min submission was received.',
             'email'        => ['email' => 'security_min@example.test', 'title' => 'Oriel Test: security_min'],
+        ],
+        'fields' => [
+            ['id' => 'marker', 'name' => 'Marker', 'type' => 'text', 'required' => true, 'email' => true],
+        ],
+    ];
+
+    $forms['security_min_ajax'] = [
+        'title'   => 'Security Min (AJAX)',
+        'options' => [
+            'ajax'         => true,
+            'confirmation' => 'Thanks — your security_min_ajax submission was received.',
+            'email'        => ['email' => 'security_min_ajax@example.test', 'title' => 'Oriel Test: security_min_ajax'],
         ],
         'fields' => [
             ['id' => 'marker', 'name' => 'Marker', 'type' => 'text', 'required' => true, 'email' => true],

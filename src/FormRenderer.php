@@ -231,15 +231,19 @@ class FormRenderer
     }
 
     /**
-     * Render hidden security fields: conditional nonce, honeypot, timing token.
+     * Render hidden security fields: conditional nonces, honeypot, timing token.
      */
     private function renderSecurityFields(string $formId): string
     {
         $html = '';
 
-        // Nonce: only for logged-in users (avoids stale tokens under full-page caching).
+        // Nonces: only for logged-in users (avoids stale tokens under full-page caching).
         if (is_user_logged_in()) {
             $html .= wp_nonce_field('oriel_submit_' . $formId, '_oriel_nonce', true, false);
+
+            // wp_rest nonce so REST cookie auth keeps the logged-in user on
+            // AJAX submissions; without it core demotes the request to user 0.
+            $html .= wp_nonce_field('wp_rest', '_wpnonce', false, false);
         }
 
         // Honeypot: hidden field that bots fill but humans don't.
