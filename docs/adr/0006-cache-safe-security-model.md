@@ -16,3 +16,4 @@ Two related choices follow from the same reasoning:
 
 - Do not "fix" the missing anonymous nonce check or the open `permission_callback`; both are load-bearing.
 - Anything else Oriel does per-visitor must also survive caching (see the sessions issue in the tracker).
+- The timing check degrades on cache hits. The token is minted at cache-fill time, so by the time a visitor receives the page it is almost always older than `min_time` — the "instant submission" signal can never fire for cached traffic. "Works under caching" means the check does not reject legitimate visitors; it does not mean it catches bots there. On cache hits the effective anonymous protections are the honeypot and rate limiting, with `max_time` as a staleness backstop (pages cached beyond `max_time` reject everyone — a documented design limit, see the FPC e2e suite). Do not count on `min_time` for any page served from cache.
